@@ -1,19 +1,15 @@
-// Path: lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'core/score_manager.dart';
 import 'core/data_manager.dart';
+import 'core/theme_manager.dart'; 
 
 void main() async {
-  // Flutter motorunun hazır olduğundan emin ol
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Puanları Yükle
-  await ScoreManager().init();
   
-  // 2. JSON Verisini Yükle (Asenkron)
+  await ScoreManager().init();
   await DataManager().loadData();
+  await ThemeManager().init(); 
 
   runApp(const CalcMemoApp());
 }
@@ -23,15 +19,81 @@ class CalcMemoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'CalcMemo',
-      debugShowCheckedModeBanner: false, // Removes the debug banner
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        fontFamily: 'Roboto', // Default font
-      ),
-      home: const HomeScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeManager().themeModeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          title: 'CalcMemo',
+          debugShowCheckedModeBanner: false,
+          
+          themeMode: currentMode,
+          
+          // --- AÇIK TEMA (LIGHT) ---
+          theme: ThemeData(
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+            scaffoldBackgroundColor: Colors.grey[100],
+            useMaterial3: true,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: IconThemeData(color: Colors.black87),
+              titleTextStyle: TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            // DÜZELTME: CardTheme -> CardThemeData olarak güncellendi
+            cardTheme: CardThemeData(
+              color: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+          ),
+
+          // --- KOYU TEMA (DARK) ---
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.deepPurple, 
+              brightness: Brightness.dark
+            ),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            useMaterial3: true,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              iconTheme: IconThemeData(color: Colors.white),
+              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            // DÜZELTME: CardTheme -> CardThemeData olarak güncellendi
+            cardTheme: CardThemeData(
+              color: const Color(0xFF1E1E1E),
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+            floatingActionButtonTheme: const FloatingActionButtonThemeData(
+              backgroundColor: Colors.deepPurpleAccent,
+              foregroundColor: Colors.white,
+            ),
+            // GERİ GELDİ: Switch (Anahtar) Rengi Özelleştirme
+            switchTheme: SwitchThemeData(
+              // Not: Yeni Flutter sürümlerinde MaterialStateProperty -> WidgetStateProperty oldu
+              thumbColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.deepPurpleAccent;
+                }
+                return null;
+              }),
+              trackColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.deepPurpleAccent.withOpacity(0.5);
+                }
+                return null;
+              }),
+            ),
+          ),
+          
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

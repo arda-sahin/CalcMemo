@@ -1,12 +1,11 @@
-// Path: lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import '../widgets/menu_card.dart';
 import '../models/math_models.dart';
-import '../core/score_manager.dart'; // Import Manager
+import '../core/score_manager.dart';
 import 'topic_selection_screen.dart';
 import 'rules_list_screen.dart';
 import 'practice_type_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,26 +15,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Quizden dönünce puanları güncellemek için ekranı yenile
   void _refreshScore() {
     setState(() {
-      // ScoreManager singleton olduğu için veriler zaten güncel,
-      // sadece UI'ı (build metodunu) tetikliyoruz.
+      // Puanları güncelle
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Mevcut temanın renklerini alıyoruz
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      // Arka plan rengini artık main.dart'taki temadan alacak (elle vermiyoruz)
       appBar: AppBar(
         title: const Text(
           'CalcMemo',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -46,9 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                // Kart rengini temadan alıyoruz
+                color: theme.cardTheme.color,
                 borderRadius: BorderRadius.circular(15),
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+                boxShadow: [
+                  BoxShadow(
+                    // Koyu modda gölge çok sırıtmaması için rengi ayarlıyoruz
+                    color: isDark ? Colors.black38 : Colors.black12,
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -69,11 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  Container(
-                    width: 1,
-                    height: 40,
-                    color: Colors.grey[300],
-                  ), // Ayırıcı çizgi
+                  // Araya dikey çizgi (Rengi temadan gelsin)
+                  Container(width: 1, height: 40, color: theme.dividerColor),
                   Column(
                     children: [
                       const Text(
@@ -88,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 20,
                           ),
                           Text(
-                            "${ScoreManager().currentCombo}", // Şimdilik Combo'yu gösteriyoruz
+                            "${ScoreManager().currentCombo}",
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -156,15 +171,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   builder: (ctx) =>
                                       PracticeTypeScreen(topic: selectedTopic),
                                 ),
-                              ).then(
-                                (_) => _refreshScore(),
-                              ); // Dönünce Puanı Güncelle!
+                              ).then((_) => _refreshScore());
                             },
                           ),
                         ),
-                      ).then(
-                        (_) => _refreshScore(),
-                      ); // Topic Selection'dan geri gelirse de güncelle
+                      ).then((_) => _refreshScore());
                     },
                   ),
                 ],
