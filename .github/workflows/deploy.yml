@@ -1,15 +1,14 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy
 
 on:
   push:
-    branches: [ main ] # Sadece main branch'e kod gelince çalışır
+    branches: [ main ]
 
-# GitHub'ın dosya yazma iznine ihtiyacı var
 permissions:
   contents: write
 
 jobs:
-  build-and-deploy:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +23,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      # 1. WEB BUILD AND DEPLOY
       - name: Build Web
         run: flutter build web --release --base-href "/CalcMemo/"
 
@@ -32,3 +32,14 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
+
+      # 2. ANDROID APK BUILD
+      - name: Build APK
+        run: flutter build apk --release
+
+      # 3. APK DOWNLOAD
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CalcMemo-app
+          path: build/app/outputs/flutter-apk/app-release.apk

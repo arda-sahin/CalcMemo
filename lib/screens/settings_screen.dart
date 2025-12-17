@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import '../core/theme_manager.dart';
+import '../core/theme_manager.dart'; // Tema Yöneticisi
+import '../core/settings_manager.dart'; // Ayarlar Yöneticisi
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Mevcut temanın koyu olup olmadığını kontrol et
-    final isDarkMode = ThemeManager().themeModeNotifier.value == ThemeMode.dark;
-
     return Scaffold(
       appBar: AppBar(title: const Text("Settings"), centerTitle: true),
       body: ListView(
         children: [
           const SizedBox(height: 20),
-          // Görsel bir başlık
+
+          // --- BÖLÜM 1: GÖRÜNÜM (APPEARANCE) ---
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Text(
@@ -27,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
 
-          // Tema Değiştirme Anahtarı (Switch)
+          // Dark Mode Anahtarı
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemeManager().themeModeNotifier,
             builder: (context, currentMode, child) {
@@ -50,24 +49,52 @@ class SettingsScreen extends StatelessWidget {
 
           const Divider(),
 
-          // Gelecekte ekleyeceğimiz özellikler için yer tutucular (Disabled)
-          const ListTile(
-            leading: Icon(Icons.vibration, color: Colors.grey),
-            title: Text("Haptic Feedback"),
-            subtitle: Text("Coming soon..."),
-            enabled: false,
+          // --- BÖLÜM 2: GERİ BİLDİRİM (FEEDBACK) ---
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Text(
+              "Feedback",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
           ),
+
+          // Titreşim (Haptic Feedback) Anahtarı
+          ValueListenableBuilder<bool>(
+            valueListenable: SettingsManager().vibrationNotifier,
+            builder: (context, isVibrationOn, child) {
+              return SwitchListTile(
+                title: const Text("Haptic Feedback"),
+                subtitle: const Text("Vibrate on correct/wrong answers"),
+                secondary: Icon(
+                  isVibrationOn ? Icons.vibration : Icons.smartphone,
+                  color: Colors.deepPurpleAccent,
+                ),
+                value: isVibrationOn,
+                onChanged: (val) {
+                  SettingsManager().toggleVibration(val);
+                },
+              );
+            },
+          ),
+
+          // Ses Efektleri (Şimdilik Pasif)
           const ListTile(
             leading: Icon(Icons.volume_up, color: Colors.grey),
             title: Text("Sound Effects"),
             subtitle: Text("Coming soon..."),
-            enabled: false,
+            enabled: false, // Tıklanmaz
           ),
 
           const SizedBox(height: 40),
+
+          // Versiyon Bilgisi
           const Center(
             child: Text(
-              "CalcMemo v1.0.0",
+              "CalcMemo v1.1.0",
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ),
