@@ -1,0 +1,95 @@
+{
+  "rules": [
+    { "id": "power_rule_diff", "name": "Power Rule", "texFormula": "\\frac{d}{dx}x^n = nx^{n-1}", "topic": "derivative", "importance": 3 },
+    { "id": "chain_rule", "name": "Chain Rule", "texFormula": "\\frac{d}{dx}f(g(x)) = f'(g(x))g'(x)", "topic": "derivative", "importance": 3 },
+    { "id": "product_rule", "name": "Product Rule", "texFormula": "\\frac{d}{dx}(uv) = u'v + uv'", "topic": "derivative", "importance": 3 },
+    { "id": "quotient_rule", "name": "Quotient Rule", "texFormula": "\\frac{d}{dx}\\left(\\frac{u}{v}\\right) = \\frac{u'v - uv'}{v^2}", "topic": "derivative", "importance": 3 },
+    { "id": "sin_rule", "name": "Derivative of sin(x)", "texFormula": "\\frac{d}{dx}\\sin(x) = \\cos(x)", "topic": "derivative", "importance": 3 },
+    { "id": "cos_rule", "name": "Derivative of cos(x)", "texFormula": "\\frac{d}{dx}\\cos(x) = -\\sin(x)", "topic": "derivative", "importance": 3 },
+    { "id": "tan_rule", "name": "Derivative of tan(x)", "texFormula": "\\frac{d}{dx}\\tan(x) = \\sec^2(x)", "topic": "derivative", "importance": 2 },
+    { "id": "exp_rule_diff", "name": "Derivative of e^x", "texFormula": "\\frac{d}{dx}e^x = e^x", "topic": "derivative", "importance": 2 },
+    { "id": "ln_rule_diff", "name": "Derivative of ln(x)", "texFormula": "\\frac{d}{dx}\\ln(x) = \\frac{1}{x}", "topic": "derivative", "importance": 2 },
+    { "id": "arcsin_rule", "name": "Derivative of arcsin(x)", "texFormula": "\\frac{d}{dx}\\arcsin(x) = \\frac{1}{\\sqrt{1-x^2}}", "topic": "derivative", "importance": 1 },
+    { "id": "arctan_rule", "name": "Derivative of arctan(x)", "texFormula": "\\frac{d}{dx}\\arctan(x) = \\frac{1}{1+x^2}", "topic": "derivative", "importance": 1 },
+
+    { "id": "power_rule_int", "name": "Power Rule (Integral)", "texFormula": "\\int x^n dx = \\frac{x^{n+1}}{n+1} + C", "topic": "integral", "importance": 3 },
+    { "id": "ln_rule_int", "name": "Integral of 1/x", "texFormula": "\\int \\frac{1}{x} dx = \\ln|x| + C", "topic": "integral", "importance": 3 },
+    { "id": "exp_rule_int", "name": "Integral of e^x", "texFormula": "\\int e^x dx = e^x + C", "topic": "integral", "importance": 2 },
+    { "id": "sin_rule_int", "name": "Integral of sin(x)", "texFormula": "\\int \\sin(x) dx = -\\cos(x) + C", "topic": "integral", "importance": 2 },
+    { "id": "cos_rule_int", "name": "Integral of cos(x)", "texFormula": "\\int \\cos(x) dx = \\sin(x) + C", "topic": "integral", "importance": 2 },
+    { "id": "integration_by_parts", "name": "Integration by Parts", "texFormula": "\\int u dv = uv - \\int v du", "topic": "integral", "importance": 3 },
+    { "id": "substitution_rule", "name": "u-Substitution", "texFormula": "\\int f(g(x))g'(x) dx = F(g(x)) + C", "topic": "integral", "importance": 3 }
+  ],
+  "questions": [
+    { "questionTex": "\\frac{d}{dx}(x^7)", "answerTex": "7x^6", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(4x^3 - 2x + 1)", "answerTex": "12x^2 - 2", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(\\sqrt{x})", "answerTex": "\\frac{1}{2\\sqrt{x}}", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(\\frac{1}{x^2})", "answerTex": "-2x^{-3}", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(x^{-4})", "answerTex": "-4x^{-5}", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(5x^2 + 3)", "answerTex": "10x", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(\\sqrt[3]{x})", "answerTex": "\\frac{1}{3}x^{-2/3}", "ruleId": "power_rule_diff", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(\\pi^2)", "answerTex": "0", "ruleId": "power_rule_diff", "topic": "derivative" },
+    
+    { "questionTex": "\\frac{d}{dx}\\sin(5x)", "answerTex": "5\\cos(5x)", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(e^{3x})", "answerTex": "3e^{3x}", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\cos(x^2)", "answerTex": "-2x\\sin(x^2)", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(2x+1)^5", "answerTex": "10(2x+1)^4", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\ln(x^2 + 1)", "answerTex": "\\frac{2x}{x^2+1}", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\sqrt{3x+4}", "answerTex": "\\frac{3}{2\\sqrt{3x+4}}", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\sin^2(x)", "answerTex": "2\\sin(x)\\cos(x)", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}e^{-x}", "answerTex": "-e^{-x}", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\cos(e^x)", "answerTex": "-e^x\\sin(e^x)", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(1-x^2)^{10}", "answerTex": "-20x(1-x^2)^9", "ruleId": "chain_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\ln(3x)", "answerTex": "\\frac{1}{x}", "ruleId": "chain_rule", "topic": "derivative" },
+
+    { "questionTex": "\\frac{d}{dx}(x e^x)", "answerTex": "e^x(x+1)", "ruleId": "product_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(x^2 \\sin x)", "answerTex": "2x\\sin x + x^2\\cos x", "ruleId": "product_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(e^x \\cos x)", "answerTex": "e^x(\\cos x - \\sin x)", "ruleId": "product_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(x \\ln x)", "answerTex": "\\ln x + 1", "ruleId": "product_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}(x^3 \\tan x)", "answerTex": "3x^2\\tan x + x^3\\sec^2 x", "ruleId": "product_rule", "topic": "derivative" },
+
+    { "questionTex": "\\frac{d}{dx}\\left(\\frac{\\sin x}{x}\\right)", "answerTex": "\\frac{x\\cos x - \\sin x}{x^2}", "ruleId": "quotient_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\left(\\frac{e^x}{x}\\right)", "answerTex": "\\frac{e^x(x-1)}{x^2}", "ruleId": "quotient_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\left(\\frac{x}{x+1}\\right)", "answerTex": "\\frac{1}{(x+1)^2}", "ruleId": "quotient_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\left(\\frac{1}{\\cos x}\\right)", "answerTex": "\\sec x \\tan x", "ruleId": "quotient_rule", "topic": "derivative" },
+    
+    { "questionTex": "\\frac{d}{dx}\\tan(3x)", "answerTex": "3\\sec^2(3x)", "ruleId": "tan_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\tan(x^2)", "answerTex": "2x\\sec^2(x^2)", "ruleId": "tan_rule", "topic": "derivative" },
+
+    { "questionTex": "\\frac{d}{dx}\\arcsin(2x)", "answerTex": "\\frac{2}{\\sqrt{1-4x^2}}", "ruleId": "arcsin_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\arctan(x/2)", "answerTex": "\\frac{2}{4+x^2}", "ruleId": "arctan_rule", "topic": "derivative" },
+    { "questionTex": "\\frac{d}{dx}\\arctan(3x)", "answerTex": "\\frac{3}{1+9x^2}", "ruleId": "arctan_rule", "topic": "derivative" },
+
+
+    { "questionTex": "\\int x^5 dx", "answerTex": "\\frac{x^6}{6} + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int (3x^2 + 4x) dx", "answerTex": "x^3 + 2x^2 + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int \\sqrt{x} dx", "answerTex": "\\frac{2}{3}x^{3/2} + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int \\frac{1}{x^3} dx", "answerTex": "-\\frac{1}{2x^2} + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int (x-1)^2 dx", "answerTex": "\\frac{(x-1)^3}{3} + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int \\pi dx", "answerTex": "\\pi x + C", "ruleId": "power_rule_int", "topic": "integral" },
+    { "questionTex": "\\int (x^2 - \\sqrt{x}) dx", "answerTex": "\\frac{x^3}{3} - \\frac{2}{3}x^{3/2} + C", "ruleId": "power_rule_int", "topic": "integral" },
+
+    { "questionTex": "\\int \\frac{5}{x} dx", "answerTex": "5\\ln|x| + C", "ruleId": "ln_rule_int", "topic": "integral" },
+    { "questionTex": "\\int \\frac{1}{2x} dx", "answerTex": "\\frac{1}{2}\\ln|x| + C", "ruleId": "ln_rule_int", "topic": "integral" },
+    { "questionTex": "\\int \\frac{dx}{x+1}", "answerTex": "\\ln|x+1| + C", "ruleId": "ln_rule_int", "topic": "integral" },
+
+    { "questionTex": "\\int e^{4x} dx", "answerTex": "\\frac{1}{4}e^{4x} + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int e^{-x} dx", "answerTex": "-e^{-x} + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\sin(2x) dx", "answerTex": "-\\frac{1}{2}\\cos(2x) + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\cos(3x) dx", "answerTex": "\\frac{1}{3}\\sin(3x) + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int 2x(x^2+1)^3 dx", "answerTex": "\\frac{1}{4}(x^2+1)^4 + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int x e^{x^2} dx", "answerTex": "\\frac{1}{2}e^{x^2} + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\frac{\\ln x}{x} dx", "answerTex": "\\frac{(\\ln x)^2}{2} + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\frac{2x}{x^2+1} dx", "answerTex": "\\ln(x^2+1) + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\sin^2(x)\\cos(x) dx", "answerTex": "\\frac{1}{3}\\sin^3(x) + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\frac{e^x}{1+e^x} dx", "answerTex": "\\ln(1+e^x) + C", "ruleId": "substitution_rule", "topic": "integral" },
+    { "questionTex": "\\int \\tan x dx", "answerTex": "-\\ln|\\cos x| + C", "ruleId": "substitution_rule", "topic": "integral" },
+
+    { "questionTex": "\\int x e^x dx", "answerTex": "e^x(x-1) + C", "ruleId": "integration_by_parts", "topic": "integral" },
+    { "questionTex": "\\int x \\sin x dx", "answerTex": "\\sin x - x\\cos x + C", "ruleId": "integration_by_parts", "topic": "integral" },
+    { "questionTex": "\\int \\ln x dx", "answerTex": "x\\ln x - x + C", "ruleId": "integration_by_parts", "topic": "integral" },
+    { "questionTex": "\\int x \\ln x dx", "answerTex": "\\frac{x^2}{2}\\ln x - \\frac{x^2}{4} + C", "ruleId": "integration_by_parts", "topic": "integral" },
+    { "questionTex": "\\int x e^{2x} dx", "answerTex": "\\frac{1}{2}xe^{2x} - \\frac{1}{4}e^{2x} + C", "ruleId": "integration_by_parts", "topic": "integral" },
+    { "questionTex": "\\int x \\cos(2x) dx", "answerTex": "\\frac{1}{2}x\\sin(2x) + \\frac{1}{4}\\cos(2x) + C", "ruleId": "integration_by_parts", "topic": "integral" }
+  ]
+}

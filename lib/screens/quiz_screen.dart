@@ -3,14 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import '../models/math_models.dart';
-import '../data/mock_data.dart';
+import '../core/data_manager.dart';
+import '../core/score_manager.dart';
 
-// Helper class to standardize data (Adapter Pattern)
+// Helper class (Adapter)
 class QuizItem {
-  final String question;      // What displays on the front
-  final String answer;        // What displays on the back
-  final bool isQuestionLatex; // Is the question text or a formula?
-  final String? hintRuleId;   // ID for the hint (optional)
+  final String question;
+  final String answer;
+  final bool isQuestionLatex;
+  final String? hintRuleId;
 
   QuizItem({
     required this.question,
@@ -22,7 +23,7 @@ class QuizItem {
 
 class QuizScreen extends StatefulWidget {
   final Topic topic;
-  final bool isPracticeMode; // false = Memorize Rules, true = Numerical Problems
+  final bool isPracticeMode;
 
   const QuizScreen({
     super.key,
@@ -39,6 +40,9 @@ class _QuizScreenState extends State<QuizScreen> {
   int _currentIndex = 0;
   bool _showAnswer = false;
 
+  // Track hint usage for current question
+  bool _usedHint = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,36 +50,17 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _loadData() {
-    // PREPARE DATA BASED ON MODE (Adapter Logic)
-    if (widget.isPracticeMode) {
-      // Load Numerical Questions
-      final rawQuestions = MathRepository.questions
-          .where((q) => q.topic == widget.topic)
-          .toList();
-      
-      _items = rawQuestions.map((q) => QuizItem(
-        question: q.questionTex,
-        answer: q.answerTex,
-        isQuestionLatex: true,
-        hintRuleId: q.ruleId, // Connect hint
-      )).toList();
+    // Veriyi ve algoritmayı DataManager'dan çekiyoruz
+    // Artık ağırlıklı (weighted) listemiz geliyor!
+    _items = DataManager().getWeightedQuizItems(
+      widget.topic,
+      widget.isPracticeMode,
+    );
 
-    } else {
-      // Load Rules for Memorization
-      final rawRules = MathRepository.rules
-          .where((r) => r.topic == widget.topic)
-          .toList();
-
-      _items = rawRules.map((r) => QuizItem(
-        question: r.name,       // Front: "Chain Rule"
-        answer: r.texFormula,   // Back: Formula
-        isQuestionLatex: false, // Front is text, not math
-        hintRuleId: null,       // No hint needed for rules
-      )).toList();
+    // Eğer liste boşsa hata vermesin
+    if (_items.isEmpty) {
+      print("Warning: No items found for topic ${widget.topic}");
     }
-    
-    // Shuffle for randomness
-    _items.shuffle();
   }
 
   void _nextCard() {
@@ -83,30 +68,72 @@ class _QuizScreenState extends State<QuizScreen> {
       if (_currentIndex < _items.length - 1) {
         _currentIndex++;
         _showAnswer = false;
+        _usedHint = false; // Reset hint usage for new card
       } else {
-        // End of quiz
-        Navigator.pop(context); // Go back
+        Navigator.pop(context); // End of quiz
       }
     });
   }
 
-  // Function to show the Hint Bottom Sheet
-  void _showHint(String ruleId) {
-    // Find the rule from the repository
-    final rule = MathRepository.rules.firstWhere(
-      (r) => r.id == ruleId, 
-      orElse: () => MathRule(id: '', name: 'Error', texFormula: '', topic: Topic.derivative)
+  // --- SCORE HANDLING LOGIC ---
+  void _handleAnswer(bool isCorrect) {
+    // 1. Calculate and update score via Manager
+    final points = ScoreManager().updateScore(
+      isCorrect: isCorrect,
+      usedHint: _usedHint,
     );
 
+    // 2. Show Feedback (SnackBar)
+    String message = isCorrect ? "Correct!" : "Wrong!";
+    Color color = isCorrect ? Colors.green : Colors.red;
+
+    // Add combo info if applicable
+    if (isCorrect && ScoreManager().currentCombo > 2) {
+      message +=
+          " (Combo x${ScoreManager().currentCombo > 4 ? '2.0' : '1.5'}!)";
+    }
+
+    // Points text (e.g., "+10 XP" or "-5 XP")
+    message += " ${points >= 0 ? '+' : ''}$points XP";
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: color,
+        duration: const Duration(milliseconds: 800),
+      ),
+    );
+
+    // 3. Move to next card
+    _nextCard();
+  }
+
+  // İpucu fonksiyonunu da DataManager'a bağlayalım
+  void _showHint(String ruleId) {
+    setState(() {
+      _usedHint = true;
+    });
+
+    // Repository yerine Manager kullanıyoruz
+    final rule = DataManager().getRuleById(ruleId);
+
+    if (rule == null) return; // Güvenlik önlemi
+
     showModalBottomSheet(
+      // ... (Burası aynı kalacak)
       context: context,
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
         height: 200,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Hint: ${rule.name}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              "Hint: ${rule.name}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             const Divider(),
             const SizedBox(height: 20),
             Center(
@@ -126,7 +153,7 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_items.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text("Quiz")),
-        body: const Center(child: Text("No questions found for this topic!")),
+        body: const Center(child: Text("No questions found!")),
       );
     }
 
@@ -134,50 +161,116 @@ class _QuizScreenState extends State<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isPracticeMode ? "Practice Problems" : "Memorize Rules"),
+        title: Text(
+          widget.isPracticeMode ? "Practice Problems" : "Memorize Rules",
+        ),
         centerTitle: true,
+        actions: [
+          // Optional: Show current score in AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: Center(
+              child: Text(
+                "XP: ${ScoreManager().totalScore}",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Progress Indicator
             Text(
               "Question ${_currentIndex + 1} / ${_items.length}",
-              textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey),
             ),
-            const SizedBox(height: 20),
 
-            // --- FLASHCARD AREA ---
+            // --- COMBO INDICATOR (FIRE) ---
+            if (ScoreManager().currentCombo >= 2)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department,
+                      color: Colors.orange,
+                    ),
+                    Text(
+                      " Streak: ${ScoreManager().currentCombo}",
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            // --- FLASHCARD ---
             Expanded(
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // QUESTION (FRONT)
-                      const Text("QUESTION", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const Text(
+                        "QUESTION",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       currentItem.isQuestionLatex
-                          ? Math.tex(currentItem.question, textStyle: const TextStyle(fontSize: 24))
-                          : Text(currentItem.question, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                      
+                          ? Math.tex(
+                              currentItem.question,
+                              textStyle: const TextStyle(fontSize: 24),
+                            )
+                          : Text(
+                              currentItem.question,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
                       const Divider(height: 40),
 
-                      // ANSWER (BACK) - Hidden initially
                       if (_showAnswer) ...[
-                        const Text("ANSWER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green)),
+                        const Text(
+                          "ANSWER",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
                         const SizedBox(height: 20),
-                        Math.tex(currentItem.answer, textStyle: const TextStyle(fontSize: 24, color: Colors.green)),
+                        Math.tex(
+                          currentItem.answer,
+                          textStyle: const TextStyle(
+                            fontSize: 24,
+                            color: Colors.green,
+                          ),
+                        ),
                       ] else ...[
-                        const Text("?", style: TextStyle(fontSize: 50, color: Colors.black12)),
-                      ]
+                        const Text(
+                          "?",
+                          style: TextStyle(fontSize: 50, color: Colors.black12),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -186,30 +279,73 @@ class _QuizScreenState extends State<QuizScreen> {
             const SizedBox(height: 20),
 
             // --- BUTTONS ---
-            
-            // HINT BUTTON (Only if Practice Mode and Answer is not shown yet)
-            if (widget.isPracticeMode && !_showAnswer && currentItem.hintRuleId != null)
-              TextButton.icon(
-                onPressed: () => _showHint(currentItem.hintRuleId!),
-                icon: const Icon(Icons.lightbulb_outline, color: Colors.orange),
-                label: const Text("Need a Hint?", style: TextStyle(color: Colors.orange)),
-              ),
+            if (!_showAnswer) ...[
+              // State 1: Question Visible
+              if (widget.isPracticeMode && currentItem.hintRuleId != null)
+                TextButton.icon(
+                  onPressed: () => _showHint(currentItem.hintRuleId!),
+                  icon: const Icon(
+                    Icons.lightbulb_outline,
+                    color: Colors.orange,
+                  ),
+                  label: const Text(
+                    "Need a Hint? (-50% XP)",
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ),
 
-            const SizedBox(height: 10),
-
-            // SHOW ANSWER / NEXT BUTTON
-            ElevatedButton(
-              onPressed: _showAnswer ? _nextCard : () => setState(() => _showAnswer = true),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(15),
-                backgroundColor: _showAnswer ? Colors.blue : Colors.grey[800],
-                foregroundColor: Colors.white,
+              ElevatedButton(
+                onPressed: () => setState(() => _showAnswer = true),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 15,
+                  ),
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text(
+                  "Show Answer",
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
-              child: Text(
-                _showAnswer ? (_currentIndex == _items.length - 1 ? "Finish" : "Next Question") : "Show Answer",
-                style: const TextStyle(fontSize: 18),
+            ] else ...[
+              // State 2: Answer Revealed (Self Evaluation)
+              const Text(
+                "Did you get it right?",
+                style: TextStyle(color: Colors.grey),
               ),
-            ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleAnswer(false), // WRONG
+                      icon: const Icon(Icons.close),
+                      label: const Text("Missed it"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(15),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleAnswer(true), // CORRECT
+                      icon: const Icon(Icons.check),
+                      label: const Text("I knew it!"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

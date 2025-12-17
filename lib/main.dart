@@ -2,8 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'core/score_manager.dart';
+import 'core/data_manager.dart';
 
-void main() {
+void main() async {
+  // Flutter motorunun hazır olduğundan emin ol
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Puanları Yükle
+  await ScoreManager().init();
+  
+  // 2. JSON Verisini Yükle (Asenkron)
+  await DataManager().loadData();
+
   runApp(const CalcMemoApp());
 }
 
