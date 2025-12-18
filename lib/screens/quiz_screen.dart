@@ -3,18 +3,21 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import '../models/math_models.dart';
 import '../core/data_manager.dart';
 import '../core/score_manager.dart';
-import 'scratchpad_screen.dart';
-import 'package:flutter/services.dart';
 import '../core/settings_manager.dart';
+import '../core/favorites_manager.dart'; // NEW: Import Favorites Manager
+import 'package:flutter/services.dart';
+import 'scratchpad_screen.dart';
 
 // Helper class (Adapter)
 class QuizItem {
+  final String id; // NEW: Unique ID for favorites
   final String question;
   final String answer;
   final bool isQuestionLatex;
   final String? hintRuleId;
 
   QuizItem({
+    required this.id, // NEW
     required this.question,
     required this.answer,
     this.isQuestionLatex = true,
@@ -40,8 +43,6 @@ class _QuizScreenState extends State<QuizScreen> {
   List<QuizItem> _items = [];
   int _currentIndex = 0;
   bool _showAnswer = false;
-
-  // Track hint usage for current question
   bool _usedHint = false;
 
   @override
@@ -51,7 +52,6 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _loadData() {
-    // Veriyi DataManager'dan çekiyoruz
     _items = DataManager().getWeightedQuizItems(
       widget.topic,
       widget.isPracticeMode,
@@ -67,35 +67,27 @@ class _QuizScreenState extends State<QuizScreen> {
       if (_currentIndex < _items.length - 1) {
         _currentIndex++;
         _showAnswer = false;
-        _usedHint = false; // Reset hint usage for new card
+        _usedHint = false;
       } else {
-        Navigator.pop(context); // End of quiz
+        Navigator.pop(context);
       }
     });
   }
 
-  // --- SCORE HANDLING LOGIC ---
   void _handleAnswer(bool isCorrect) {
-    // 1. Calculate and update score
     final points = ScoreManager().updateScore(
       isCorrect: isCorrect,
       usedHint: _usedHint,
     );
 
-    // --- YENİ: HAPTIC FEEDBACK (Titreşim) ---
-    // Eğer ayarlarda titreşim açık ise çalıştır
     if (SettingsManager().vibrationNotifier.value) {
       if (isCorrect) {
-        // Doğru cevap: Hafif, tatmin edici bir titreşim
         HapticFeedback.mediumImpact();
       } else {
-        // Yanlış cevap: Daha ağır, uyarıcı bir titreşim
         HapticFeedback.heavyImpact();
       }
     }
-    // ---------------------------------------
 
-    // 2. Show Feedback (SnackBar)
     String message = isCorrect ? "Correct!" : "Wrong!";
     Color color = isCorrect ? Colors.green : Colors.red;
 
@@ -117,14 +109,15 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
 
-    // 3. Move to next card
     _nextCard();
   }
 
   void _showHint(String ruleId) {
-    setState(() {
-      _usedHint = true;
-    });
+    if (!_showAnswer) {
+      setState(() {
+        _usedHint = true;
+      });
+    }
 
     final rule = DataManager().getRuleById(ruleId);
 
@@ -138,7 +131,7 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           children: [
             Text(
-              "Hint: ${rule.name}",
+              _showAnswer ? "Related Rule: ${rule.name}" : "Hint: ${rule.name}",
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const Divider(),
@@ -173,7 +166,6 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
         centerTitle: true,
         actions: [
-          // Show current score in AppBar
           Padding(
             padding: const EdgeInsets.only(right: 20),
             child: Center(
@@ -186,26 +178,22 @@ class _QuizScreenState extends State<QuizScreen> {
         ],
       ),
 
-      // --- YENİ EKLENEN KISIM: KARALAMA DEFTERİ BUTONU ---
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurpleAccent,
         foregroundColor: Colors.white,
-        child: const Icon(Icons.edit), // Kalem ikonu
+        child: const Icon(Icons.edit),
         onPressed: () {
-          // Scratchpad ekranını aç
           Navigator.push(
             context,
             MaterialPageRoute(
-              fullscreenDialog: true, // Tam ekran dialog efekti
-              builder: (context) => ScratchpadScreen(
-                questionTex: currentItem.question, // Mevcut soruyu gönderiyoruz
-              ),
+              fullscreenDialog: true,
+              builder: (context) =>
+                  ScratchpadScreen(questionTex: currentItem.question),
             ),
           );
         },
       ),
 
-      // ----------------------------------------------------
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -215,7 +203,6 @@ class _QuizScreenState extends State<QuizScreen> {
               style: const TextStyle(color: Colors.grey),
             ),
 
-            // --- COMBO INDICATOR (FIRE) ---
             if (ScoreManager().currentCombo >= 2)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -239,68 +226,108 @@ class _QuizScreenState extends State<QuizScreen> {
 
             const SizedBox(height: 10),
 
-            // --- FLASHCARD ---
+            // --- FLASHCARD WITH STAR ICON ---
             Expanded(
               child: Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "QUESTION",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      currentItem.isQuestionLatex
-                          ? Math.tex(
-                              currentItem.question,
-                              textStyle: const TextStyle(fontSize: 24),
-                            )
-                          : Text(
-                              currentItem.question,
-                              style: const TextStyle(
-                                fontSize: 24,
+                child: Stack(
+                  children: [
+                    // 1. Content
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Center(
+                            child: Text(
+                              "QUESTION",
+                              style: TextStyle(
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.grey,
                               ),
-                              textAlign: TextAlign.center,
                             ),
-
-                      const Divider(height: 40),
-
-                      if (_showAnswer) ...[
-                        const Text(
-                          "ANSWER",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        Math.tex(
-                          currentItem.answer,
-                          textStyle: const TextStyle(
-                            fontSize: 24,
-                            color: Colors.green,
+                          const SizedBox(height: 20),
+                          Center(
+                            child: currentItem.isQuestionLatex
+                                ? Math.tex(
+                                    currentItem.question,
+                                    textStyle: const TextStyle(fontSize: 24),
+                                  )
+                                : Text(
+                                    currentItem.question,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                           ),
-                        ),
-                      ] else ...[
-                        const Text(
-                          "?",
-                          style: TextStyle(fontSize: 50, color: Colors.black12),
-                        ),
-                      ],
-                    ],
-                  ),
+
+                          const Divider(height: 40),
+
+                          if (_showAnswer) ...[
+                            const Center(
+                              child: Text(
+                                "ANSWER",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Center(
+                              child: Math.tex(
+                                currentItem.answer,
+                                textStyle: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            const Center(
+                              child: Text(
+                                "?",
+                                style: TextStyle(
+                                  fontSize: 50,
+                                  color: Colors.black12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    // 2. Star Icon (Top Right)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: ValueListenableBuilder<List<String>>(
+                        valueListenable: FavoritesManager().favoritesNotifier,
+                        builder: (context, favorites, child) {
+                          final isFav = favorites.contains(currentItem.id);
+                          return IconButton(
+                            icon: Icon(
+                              isFav ? Icons.star : Icons.star_border,
+                              color: isFav ? Colors.amber : Colors.grey[400],
+                              size: 30,
+                            ),
+                            onPressed: () {
+                              FavoritesManager().toggleFavorite(currentItem.id);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -308,7 +335,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
             // --- BUTTONS ---
             if (!_showAnswer) ...[
-              // State 1: Question Visible
               if (widget.isPracticeMode && currentItem.hintRuleId != null)
                 TextButton.icon(
                   onPressed: () => _showHint(currentItem.hintRuleId!),
@@ -338,7 +364,18 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
               ),
             ] else ...[
-              // State 2: Answer Revealed (Self Evaluation)
+              if (widget.isPracticeMode && currentItem.hintRuleId != null)
+                TextButton.icon(
+                  onPressed: () => _showHint(currentItem.hintRuleId!),
+                  icon: const Icon(Icons.info_outline, color: Colors.blueGrey),
+                  label: const Text(
+                    "Show Rule Formula",
+                    style: TextStyle(color: Colors.blueGrey),
+                  ),
+                ),
+
+              const SizedBox(height: 10),
+
               const Text(
                 "Did you get it right?",
                 style: TextStyle(color: Colors.grey),
@@ -348,7 +385,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _handleAnswer(false), // WRONG
+                      onPressed: () => _handleAnswer(false),
                       icon: const Icon(Icons.close),
                       label: const Text("Missed it"),
                       style: ElevatedButton.styleFrom(
@@ -361,7 +398,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   const SizedBox(width: 20),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _handleAnswer(true), // CORRECT
+                      onPressed: () => _handleAnswer(true),
                       icon: const Icon(Icons.check),
                       label: const Text("I knew it!"),
                       style: ElevatedButton.styleFrom(

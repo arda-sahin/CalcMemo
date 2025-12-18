@@ -4,6 +4,7 @@ import 'core/score_manager.dart';
 import 'core/data_manager.dart';
 import 'core/theme_manager.dart';
 import 'core/settings_manager.dart';
+import 'core/favorites_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,7 @@ void main() async {
   await DataManager().loadData();
   await ThemeManager().init();
   SettingsManager().init();
+  FavoritesManager().init();
 
   runApp(const CalcMemoApp());
 }
