@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import '../models/math_models.dart';
-import '../core/data_manager.dart';
-import '../core/score_manager.dart';
-import '../core/settings_manager.dart';
-import '../core/favorites_manager.dart'; // NEW: Import Favorites Manager
-import 'package:flutter/services.dart';
-import 'scratchpad_screen.dart';
+import '../core/data_manager.dart'; 
+import '../core/score_manager.dart'; 
+import '../core/settings_manager.dart'; 
+import '../core/favorites_manager.dart'; 
+import 'package:flutter/services.dart'; 
+import 'scratchpad_screen.dart'; 
 
-// Helper class (Adapter)
+// Enum to define where the questions come from
+enum QuizSource {
+  topic,      // Normal mode (Derivative/Integral)
+  favorites,  // From favorites list
+  mistakes    // From mistakes list (Future feature)
+}
+
 class QuizItem {
-  final String id; // NEW: Unique ID for favorites
+  final String id;
   final String question;
   final String answer;
   final bool isQuestionLatex;
   final String? hintRuleId;
 
   QuizItem({
-    required this.id, // NEW
+    required this.id,
     required this.question,
     required this.answer,
     this.isQuestionLatex = true,
@@ -26,13 +32,15 @@ class QuizItem {
 }
 
 class QuizScreen extends StatefulWidget {
-  final Topic topic;
-  final bool isPracticeMode;
+  final QuizSource source;      // NEW: Source of the quiz
+  final Topic? topic;           // Nullable (only needed if source is topic)
+  final bool isPracticeMode;    // Needed if source is topic
 
   const QuizScreen({
     super.key,
-    required this.topic,
-    required this.isPracticeMode,
+    required this.source,       // Required
+    this.topic,                 // Optional
+    this.isPracticeMode = true, // Default
   });
 
   @override
@@ -43,7 +51,7 @@ class _QuizScreenState extends State<QuizScreen> {
   List<QuizItem> _items = [];
   int _currentIndex = 0;
   bool _showAnswer = false;
-  bool _usedHint = false;
+  bool _usedHint = false; 
 
   @override
   void initState() {
@@ -52,13 +60,26 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _loadData() {
-    _items = DataManager().getWeightedQuizItems(
-      widget.topic,
-      widget.isPracticeMode,
-    );
-
+    // Decide based on source
+    switch (widget.source) {
+      case QuizSource.topic:
+        if (widget.topic != null) {
+          _items = DataManager().getWeightedQuizItems(widget.topic!, widget.isPracticeMode);
+        }
+        break;
+        
+      case QuizSource.favorites:
+        _items = DataManager().getFavoriteQuizItems();
+        break;
+        
+      case QuizSource.mistakes:
+        // Future implementation
+        _items = [];
+        break;
+    }
+    
     if (_items.isEmpty) {
-      print("Warning: No items found for topic ${widget.topic}");
+        print("Warning: No items found for this quiz.");
     }
   }
 
@@ -67,17 +88,19 @@ class _QuizScreenState extends State<QuizScreen> {
       if (_currentIndex < _items.length - 1) {
         _currentIndex++;
         _showAnswer = false;
-        _usedHint = false;
+        _usedHint = false; 
       } else {
-        Navigator.pop(context);
+        Navigator.pop(context); 
       }
     });
   }
 
   void _handleAnswer(bool isCorrect) {
+    // Note: If reviewing favorites, we might want to give less XP or no XP.
+    // For now, let's keep it same but maybe we can change logic later.
     final points = ScoreManager().updateScore(
-      isCorrect: isCorrect,
-      usedHint: _usedHint,
+      isCorrect: isCorrect, 
+      usedHint: _usedHint
     );
 
     if (SettingsManager().vibrationNotifier.value) {
@@ -90,20 +113,16 @@ class _QuizScreenState extends State<QuizScreen> {
 
     String message = isCorrect ? "Correct!" : "Wrong!";
     Color color = isCorrect ? Colors.green : Colors.red;
-
+    
     if (isCorrect && ScoreManager().currentCombo > 2) {
-      message +=
-          " (Combo x${ScoreManager().currentCombo > 4 ? '2.0' : '1.5'}!)";
+      message += " (Combo x${ScoreManager().currentCombo > 4 ? '2.0' : '1.5'}!)";
     }
-
+    
     message += " ${points >= 0 ? '+' : ''}$points XP";
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: color,
         duration: const Duration(milliseconds: 800),
       ),
@@ -115,11 +134,11 @@ class _QuizScreenState extends State<QuizScreen> {
   void _showHint(String ruleId) {
     if (!_showAnswer) {
       setState(() {
-        _usedHint = true;
+        _usedHint = true; 
       });
     }
 
-    final rule = DataManager().getRuleById(ruleId);
+    final rule = DataManager().getRuleById(ruleId); 
 
     if (rule == null) return;
 
@@ -131,8 +150,8 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           children: [
             Text(
-              _showAnswer ? "Related Rule: ${rule.name}" : "Hint: ${rule.name}",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              _showAnswer ? "Related Rule: ${rule.name}" : "Hint: ${rule.name}", 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)
             ),
             const Divider(),
             const SizedBox(height: 20),
@@ -150,31 +169,50 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // EMPTY STATE HANDLING
     if (_items.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Quiz")),
-        body: const Center(child: Text("No questions found!")),
+        appBar: AppBar(title: const Text("Review")),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.folder_open, size: 80, color: Colors.grey),
+              const SizedBox(height: 20),
+              Text(
+                widget.source == QuizSource.favorites 
+                  ? "No favorites added yet!" 
+                  : "No items found.",
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Go Back"),
+              )
+            ],
+          ),
+        ),
       );
     }
 
     final currentItem = _items[_currentIndex];
+    
+    // Dynamic Title
+    String title = "Quiz";
+    if (widget.source == QuizSource.favorites) title = "Review Favorites";
+    else if (widget.isPracticeMode) title = "Practice Problems";
+    else title = "Memorize Rules";
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.isPracticeMode ? "Practice Problems" : "Memorize Rules",
-        ),
+        title: Text(title),
         centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: Center(
-              child: Text(
-                "XP: ${ScoreManager().totalScore}",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
+            Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: Center(child: Text("XP: ${ScoreManager().totalScore}", style: const TextStyle(fontWeight: FontWeight.bold))),
+            )
         ],
       ),
 
@@ -187,8 +225,9 @@ class _QuizScreenState extends State<QuizScreen> {
             context,
             MaterialPageRoute(
               fullscreenDialog: true,
-              builder: (context) =>
-                  ScratchpadScreen(questionTex: currentItem.question),
+              builder: (context) => ScratchpadScreen(
+                questionTex: currentItem.question,
+              ),
             ),
           );
         },
@@ -198,27 +237,18 @@ class _QuizScreenState extends State<QuizScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            Text(
-              "Question ${_currentIndex + 1} / ${_items.length}",
-              style: const TextStyle(color: Colors.grey),
-            ),
-
+            Text("Question ${_currentIndex + 1} / ${_items.length}", style: const TextStyle(color: Colors.grey)),
+            
             if (ScoreManager().currentCombo >= 2)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.local_fire_department,
-                      color: Colors.orange,
-                    ),
+                    const Icon(Icons.local_fire_department, color: Colors.orange),
                     Text(
                       " Streak: ${ScoreManager().currentCombo}",
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -226,87 +256,41 @@ class _QuizScreenState extends State<QuizScreen> {
 
             const SizedBox(height: 10),
 
-            // --- FLASHCARD WITH STAR ICON ---
+            // --- FLASHCARD ---
             Expanded(
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 child: Stack(
                   children: [
-                    // 1. Content
                     Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Center(
-                            child: Text(
-                              "QUESTION",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
+                          const Center(child: Text("QUESTION", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey))),
                           const SizedBox(height: 20),
                           Center(
                             child: currentItem.isQuestionLatex
-                                ? Math.tex(
-                                    currentItem.question,
-                                    textStyle: const TextStyle(fontSize: 24),
-                                  )
-                                : Text(
-                                    currentItem.question,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
+                                ? Math.tex(currentItem.question, textStyle: const TextStyle(fontSize: 24))
+                                : Text(currentItem.question, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                           ),
-
+                          
                           const Divider(height: 40),
 
                           if (_showAnswer) ...[
-                            const Center(
-                              child: Text(
-                                "ANSWER",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ),
+                            const Center(child: Text("ANSWER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green))),
                             const SizedBox(height: 20),
                             Center(
-                              child: Math.tex(
-                                currentItem.answer,
-                                textStyle: const TextStyle(
-                                  fontSize: 24,
-                                  color: Colors.green,
-                                ),
-                              ),
+                              child: Math.tex(currentItem.answer, textStyle: const TextStyle(fontSize: 24, color: Colors.green)),
                             ),
                           ] else ...[
-                            const Center(
-                              child: Text(
-                                "?",
-                                style: TextStyle(
-                                  fontSize: 50,
-                                  color: Colors.black12,
-                                ),
-                              ),
-                            ),
-                          ],
+                            const Center(child: Text("?", style: TextStyle(fontSize: 50, color: Colors.black12))),
+                          ]
                         ],
                       ),
                     ),
 
-                    // 2. Star Icon (Top Right)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -335,57 +319,39 @@ class _QuizScreenState extends State<QuizScreen> {
 
             // --- BUTTONS ---
             if (!_showAnswer) ...[
-              if (widget.isPracticeMode && currentItem.hintRuleId != null)
-                TextButton.icon(
-                  onPressed: () => _showHint(currentItem.hintRuleId!),
-                  icon: const Icon(
-                    Icons.lightbulb_outline,
-                    color: Colors.orange,
+              if (widget.source != QuizSource.favorites && widget.isPracticeMode && currentItem.hintRuleId != null)
+                 TextButton.icon(
+                    onPressed: () => _showHint(currentItem.hintRuleId!),
+                    icon: const Icon(Icons.lightbulb_outline, color: Colors.orange),
+                    label: const Text("Need a Hint? (-50% XP)", style: TextStyle(color: Colors.orange)),
                   ),
-                  label: const Text(
-                    "Need a Hint? (-50% XP)",
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                ),
-
+              
               ElevatedButton(
                 onPressed: () => setState(() => _showAnswer = true),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 15,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text(
-                  "Show Answer",
-                  style: TextStyle(fontSize: 18),
-                ),
+                child: const Text("Show Answer", style: TextStyle(fontSize: 18)),
               ),
             ] else ...[
-              if (widget.isPracticeMode && currentItem.hintRuleId != null)
-                TextButton.icon(
-                  onPressed: () => _showHint(currentItem.hintRuleId!),
-                  icon: const Icon(Icons.info_outline, color: Colors.blueGrey),
-                  label: const Text(
-                    "Show Rule Formula",
-                    style: TextStyle(color: Colors.blueGrey),
+              if (currentItem.hintRuleId != null)
+                 TextButton.icon(
+                    onPressed: () => _showHint(currentItem.hintRuleId!),
+                    icon: const Icon(Icons.info_outline, color: Colors.blueGrey),
+                    label: const Text("Show Rule Formula", style: TextStyle(color: Colors.blueGrey)),
                   ),
-                ),
 
               const SizedBox(height: 10),
-
-              const Text(
-                "Did you get it right?",
-                style: TextStyle(color: Colors.grey),
-              ),
+              
+              const Text("Did you get it right?", style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _handleAnswer(false),
+                      onPressed: () => _handleAnswer(false), 
                       icon: const Icon(Icons.close),
                       label: const Text("Missed it"),
                       style: ElevatedButton.styleFrom(
@@ -398,7 +364,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   const SizedBox(width: 20),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () => _handleAnswer(true),
+                      onPressed: () => _handleAnswer(true), 
                       icon: const Icon(Icons.check),
                       label: const Text("I knew it!"),
                       style: ElevatedButton.styleFrom(
@@ -409,7 +375,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   ),
                 ],
-              ),
+              )
             ],
           ],
         ),

@@ -8,6 +8,7 @@ import 'generators/integral_power_gen.dart';
 import 'generators/trig_chain_gen.dart';
 import 'generators/product_rule_gen.dart';
 import 'generators/quotient_rule_gen.dart';
+import 'favorites_manager.dart';
 
 class DataManager {
   // Singleton
@@ -134,5 +135,40 @@ class DataManager {
     } catch (e) {
       return null;
     }
+  }
+  // --- NEW: FAVORITES FETCHING ---
+  List<QuizItem> getFavoriteQuizItems() {
+    List<QuizItem> pool = [];
+    final favIds = FavoritesManager().favoritesNotifier.value;
+
+    // 1. Check Rules
+    for (var rule in _rules) {
+      if (favIds.contains(rule.id)) {
+        pool.add(QuizItem(
+          id: rule.id,
+          question: rule.name,
+          answer: rule.texFormula,
+          isQuestionLatex: false,
+          hintRuleId: null,
+        ));
+      }
+    }
+
+    // 2. Check Questions (Numerical)
+    for (var question in _questions) {
+      // Numerical questions use their text as ID in our system
+      if (favIds.contains(question.questionTex)) {
+        pool.add(QuizItem(
+          id: question.questionTex,
+          question: question.questionTex,
+          answer: question.answerTex,
+          isQuestionLatex: true,
+          hintRuleId: question.ruleId,
+        ));
+      }
+    }
+
+    pool.shuffle();
+    return pool;
   }
 }

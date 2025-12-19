@@ -1,9 +1,7 @@
-// Path: lib/screens/practice_type_screen.dart
-
 import 'package:flutter/material.dart';
 import '../models/math_models.dart';
 import '../widgets/menu_card.dart';
-import 'quiz_screen.dart';
+import 'quiz_screen.dart'; // Imports QuizScreen and QuizSource enum
 
 class PracticeTypeScreen extends StatelessWidget {
   final Topic topic;
@@ -34,6 +32,7 @@ class PracticeTypeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => QuizScreen(
+                      source: QuizSource.topic, // EKLENDİ: Kaynak belirtiliyor
                       topic: topic, 
                       isPracticeMode: false, // Rule Memorization
                     ),
@@ -52,6 +51,7 @@ class PracticeTypeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => QuizScreen(
+                      source: QuizSource.topic, // EKLENDİ: Kaynak belirtiliyor
                       topic: topic, 
                       isPracticeMode: true, // Numerical + Hint
                     ),

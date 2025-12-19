@@ -6,6 +6,7 @@ import 'topic_selection_screen.dart';
 import 'rules_list_screen.dart';
 import 'practice_type_screen.dart';
 import 'settings_screen.dart';
+import 'review_selection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -174,6 +175,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               ).then((_) => _refreshScore());
                             },
                           ),
+                        ),
+                      ).then((_) => _refreshScore());
+                    },
+                  ),
+                  MenuCard(
+                    title: 'Review',
+                    icon: Icons.refresh_rounded, // Tekrar ikonu
+                    color: Colors.green, // Farklı bir renk
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ReviewSelectionScreen(),
                         ),
                       ).then((_) => _refreshScore());
                     },
